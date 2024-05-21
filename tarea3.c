@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include "tdas/list.h"
+#include "tdas/stack.h"
 #include "tdas/heap.h"
 #include "tdas/extra.h"
 #include <string.h>
@@ -21,6 +22,17 @@ State* createState(){
 	return s;
 }
 
+int is_final_state(State* s){
+	int final_state[3][3] = {{0,1,2},{3,4,5},{6,7,9}};
+	
+	for(int i = 0; i < 3; i++){
+		for(int j = 0; j < 3; j++){
+			if (s->square[i][j] != final_state[i][j]) return 0;
+		}
+	}
+	return 1;
+}
+
 // Función para copiar un nuevo estado
 State* copy(State* s){
 	State* new_state = (State*) malloc(sizeof(State));
@@ -31,12 +43,12 @@ State* copy(State* s){
 	new_state->y = s->y;
 	new_state->actions = list_create();
 	
-	int action = list_size(s->actions);
+	int action = list_first(s->actions);
+	
 	while(action != NULL){
 		list_pushBack(new_state->actions, action);
 		action = list_next(s->actions);
 	}
-	
 	return new_state;
 	
 }
@@ -47,10 +59,10 @@ State* transition(State* current_state, int action){
 
 	switch(action){
 		case 1:
-			new_y++;//arriba
+			new_y--;//arriba
 			break;
 		case 2:
-			new_y--; //abajo
+			new_y++; //abajo
 			break;
 		case 3:
 			new_x--; ///izq
@@ -74,7 +86,7 @@ State* transition(State* current_state, int action){
 		new_state->x = new_x;
 		new_state->y = new_y;
 		//Agregar action a la list de actions
-		list_pushBack(new_state->actions, action);
+		list_pushBack(current_state->actions, action);
 		return new_state;
 	}
 	return NULL;
@@ -82,12 +94,18 @@ State* transition(State* current_state, int action){
 
 List* get_adj_states(State* s){
 	List* adj = list_create();
-	for (int action = 1; action <= 4; action++){
-		State* new_state = transition(s, action);
-		if (new_state != NULL){
-			list_pushBack(adj, new_state);
+	State* aux = s;
+	
+	//while (!is_final_state(aux)){
+		for (int action = 1; action <= 4; action++){
+			State* new_state = transition(aux, action);
+			if (new_state != NULL){
+				list_pushBack(adj, new_state);
+			}
 		}
-	}
+		//aux = new_state;
+	//}
+	//printf("xd");	
 	return adj;
 }
 
@@ -107,6 +125,33 @@ int distancia_L1(State* state) {
 	return ev;
 }
 
+/*Para evitar que la búsqueda en profundidad se quede iterando hasta el infinito, pueden limitar la altura del árbol de búsqueda. Por ejemplo. si el tamaño de la lista de acciones es mayor a 10, continuar con el siguiente estado (y no agregar estados adyacentes).*/
+State* DFS(State* initial_state, int* count){
+	Stack* stack = stack_create(stack);
+	stack_push(stack, initial_state);
+
+	while(stack_top(stack) != NULL){
+		State* current_state = (State*) stack_top(stack);
+		stack_pop(stack);
+		(*count)++;
+		
+		if (is_final_state(current_state)){
+			free(stack);
+			return current_state;
+		}
+		if (current_state)
+		List* adj = get_adj_states(current_state);
+		State* aux_state = list_first(adj);
+		while(aux_state != NULL){
+			stack_push(stack, aux_state);
+			//imprimirEstado(aux_state);
+			aux_state = list_next(adj);
+		}
+		free(adj);
+	}
+	return NULL;
+}
+
 
 // Función para imprimir el estado del puzzle
 void imprimirEstado(const State *estado) {
@@ -119,6 +164,7 @@ void imprimirEstado(const State *estado) {
 		}
 		printf("\n");
 	}
+	printf("----\n");
 }
 
 
@@ -129,8 +175,8 @@ int main() {
 		 {1, 3, 4}, // Segunda fila
 		 {6, 5, 7}, // Tercera fila
 		 },  
-		0, 1   // Posición del espacio vacío (fila 0, columna 1)
-	};
+		0, 0   // Posición del espacio vacío (fila 0, columna 1)
+	}; 
 	estado_inicial.actions = list_create();
 
 	// Imprime el estado inicial
@@ -172,6 +218,8 @@ int main() {
 	}
 	printf("No hay más elementos en el Heap\n");
 
+	int count = 0;
+	State* final_state = (State*) malloc(sizeof(State));
 	int opcion;
 	do {
 		printf("\n***** EJEMPLO MENU ******\n");
@@ -189,7 +237,9 @@ int main() {
 	
 		switch (opcion) {
 		case '1':
-		  //dfs(estado_inicial);
+		  
+			final_state = DFS(&estado_inicial, &count);
+			imprimirEstado(final_state);
 		  break;
 		case '2':
 		  //bfs(estado_inicial);
