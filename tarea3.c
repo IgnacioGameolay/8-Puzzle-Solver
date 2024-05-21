@@ -24,10 +24,19 @@ State* createState(){
 // Función para copiar un nuevo estado
 State* copy(State* s){
 	State* new_state = (State*) malloc(sizeof(State));
+	
 	memcpy(new_state->square, s->square, sizeof(int) * 9);
+	
 	new_state->x = s->x;
 	new_state->y = s->y;
 	new_state->actions = list_create();
+	
+	int action = list_size(s->actions);
+	while(action != NULL){
+		list_pushBack(new_state->actions, action);
+		action = list_next(s->actions);
+	}
+	
 	return new_state;
 	
 }
@@ -46,7 +55,7 @@ State* transition(State* current_state, int action){
 		case 3:
 			new_x--; ///izq
 			break;
-		case 4;
+		case 4:
 			new_x++; //der
 			break;
 		default:
@@ -69,6 +78,17 @@ State* transition(State* current_state, int action){
 		return new_state;
 	}
 	return NULL;
+}
+
+List* get_adj_states(State* s){
+	List* adj = list_create();
+	for (int action = 1; action <= 4; action++){
+		State* new_state = transition(s, action);
+		if (new_state != NULL){
+			list_pushBack(adj, new_state);
+		}
+	}
+	return adj;
 }
 
 
@@ -119,6 +139,19 @@ int main() {
 
 	printf("Distancia L1:%d\n", distancia_L1(&estado_inicial));
 
+
+	//Generar estados adyacentes
+	List* adj = get_adj_states(&estado_inicial);
+	printf("Estados adyacentes:\n");
+	
+	State* state = (State*)list_first(adj);
+	while (state != NULL){
+		imprimirEstado(state);
+		state = (State*)list_next(adj);
+		printf("----\n");
+	}
+
+	
 	//Ejemplo de heap (cola con prioridad)
 	printf("\n***** EJEMPLO USO DE HEAP ******\nCreamos un Heap e insertamos 3 elementos con distinta prioridad\n");
 	Heap* heap = heap_create();
