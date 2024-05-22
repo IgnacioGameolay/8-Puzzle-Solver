@@ -12,6 +12,7 @@ typedef struct {
 	int x;    // Posición x del espacio vacío
 	int y;    // Posición y del espacio vacío
 	List* actions; //Secuencia de movimientos para llegar al estado
+	//int is_visited; //Si es 1 ya se visito, si no ha sido visitado es un 0
 } State;
 
 
@@ -23,7 +24,7 @@ State* createState(){
 }
 
 int is_final_state(State* s){
-	int final_state[3][3] = {{0,1,2},{3,4,5},{6,7,9}};
+	int final_state[3][3] = {{1,2,3},{4,5,6},{7,8,0}};
 	
 	for(int i = 0; i < 3; i++){
 		for(int j = 0; j < 3; j++){
@@ -46,7 +47,7 @@ State* copy(State* s){
 	int action = list_first(s->actions);
 	
 	while(action != NULL){
-		list_pushBack(new_state->actions, action);
+		list_pushFront(new_state->actions, action);
 		action = list_next(s->actions);
 	}
 	return new_state;
@@ -86,7 +87,7 @@ State* transition(State* current_state, int action){
 		new_state->x = new_x;
 		new_state->y = new_y;
 		//Agregar action a la list de actions
-		list_pushBack(current_state->actions, action);
+		list_pushFront(new_state->actions, action);
 		return new_state;
 	}
 	return NULL;
@@ -100,7 +101,7 @@ List* get_adj_states(State* s){
 		for (int action = 1; action <= 4; action++){
 			State* new_state = transition(aux, action);
 			if (new_state != NULL){
-				list_pushBack(adj, new_state);
+				list_pushFront(adj, new_state);
 			}
 		}
 		//aux = new_state;
@@ -127,9 +128,16 @@ int distancia_L1(State* state) {
 
 /*Para evitar que la búsqueda en profundidad se quede iterando hasta el infinito, pueden limitar la altura del árbol de búsqueda. Por ejemplo. si el tamaño de la lista de acciones es mayor a 10, continuar con el siguiente estado (y no agregar estados adyacentes).*/
 State* DFS(State* initial_state, int* count){
+	//Crear limitantes
+	//
+	int max_high = 10;
+	int current_high = 0;
+
+	//Crear stacks
 	Stack* stack = stack_create(stack);
 	stack_push(stack, initial_state);
-
+	
+	
 	while(stack_top(stack) != NULL){
 		State* current_state = (State*) stack_top(stack);
 		stack_pop(stack);
@@ -139,15 +147,34 @@ State* DFS(State* initial_state, int* count){
 			free(stack);
 			return current_state;
 		}
-		if (current_state)
-		List* adj = get_adj_states(current_state);
-		State* aux_state = list_first(adj);
-		while(aux_state != NULL){
-			stack_push(stack, aux_state);
-			//imprimirEstado(aux_state);
-			aux_state = list_next(adj);
-		}
-		free(adj);
+		
+		//if (current_state->is_visited == 1) continue;
+		//else current_state->is_visited = 1;
+		
+		//if (list_size(current_state->actions) < 10){
+			List* adj = get_adj_states(current_state);
+			State* aux_state = list_first(adj);
+		
+			while(aux_state != NULL){
+				imprimirEstado(aux_state);
+				
+				if (is_final_state(aux_state)){
+					free(stack);
+					return aux_state;
+				}
+				printf("altura actual: %d\n", current_high);
+				current_high= list_size(aux_state);
+				if (current_high >= max_high) continue;
+				
+				stack_push(stack, aux_state);
+				
+				printf("----%d----\n", *count);
+				aux_state = list_next(adj);
+			}
+			free(adj);
+		//current_high++;
+		//} 
+		
 	}
 	return NULL;
 }
@@ -168,15 +195,23 @@ void imprimirEstado(const State *estado) {
 }
 
 
-int main() {
+int main() { 
 	// Estado inicial del puzzle
+	/*
 	State estado_inicial = {
-		{{0, 2, 8}, // Primera fila (0 representa espacio vacío)
+		{{2, 0, 8}, // Primera fila (0 representa espacio vacío)
 		 {1, 3, 4}, // Segunda fila
 		 {6, 5, 7}, // Tercera fila
 		 },  
-		0, 0   // Posición del espacio vacío (fila 0, columna 1)
-	}; 
+		0, 1   // Posición del espacio vacío (fila 0, columna 1)
+	}; */
+	State estado_inicial = {
+		{{1, 2, 3}, // Primera fila (0 representa espacio vacío)
+		 {4, 5, 6}, // Segunda fila
+		 {0, 7, 8}, // Tercera fila
+		 },  
+		2, 0   // Posición del espacio vacío (fila 0, columna 1)
+	};
 	estado_inicial.actions = list_create();
 
 	// Imprime el estado inicial
@@ -239,6 +274,7 @@ int main() {
 		case '1':
 		  
 			final_state = DFS(&estado_inicial, &count);
+			printf("--FINAL--\n");
 			imprimirEstado(final_state);
 		  break;
 		case '2':
