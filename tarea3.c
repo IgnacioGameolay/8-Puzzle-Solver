@@ -143,10 +143,10 @@ State* DFS(State* initial_state, int* count){
 		stack_pop(stack);
 		
 		
-		if (is_final_state(current_state)){
+		/*if (is_final_state(current_state)){
 			free(stack);
 			return current_state;
-		}
+		}*/
 		//printf("altura actual: %d\n", current_high);
 				current_high= list_size(current_state->actions);
 				if (current_high >= max_high) continue;
@@ -160,7 +160,7 @@ State* DFS(State* initial_state, int* count){
 			while(aux_state != NULL){
 				if (is_final_state(aux_state)){
 					list_clean(adj);
-					free(stack);
+					stack_clean(stack);
 					return aux_state;
 				}
 										
@@ -203,11 +203,12 @@ State* BFS(State* initial_state, int* count){
 		State* current_state = (State*) queue_front(queue);
 		queue_remove(queue);
 
-
+		/*
 		if (is_final_state(current_state)){
+			list_clean(adj);
 			free(queue);
 			return current_state;
-		}
+		}*/
 		//printf("altura actual: %d\n", current_high);
 				current_high= list_size(current_state->actions);
 				if (current_high >= max_high) continue;
@@ -221,7 +222,7 @@ State* BFS(State* initial_state, int* count){
 			while(aux_state != NULL){
 				if (is_final_state(aux_state)){
 					list_clean(adj);
-					free(queue);
+					queue_clean(queue);
 					return aux_state;
 				}
 
@@ -322,7 +323,7 @@ int main() {
 	}
 	printf("No hay más elementos en el Heap\n");
 
-	int count = 0;
+	int count;
 	State* final_state = (State*) malloc(sizeof(State));
 	int opcion;
 	do {
@@ -341,12 +342,13 @@ int main() {
 	
 		switch (opcion) {
 		case '1':
-			
+			count = 0;
 			final_state = DFS(&estado_inicial, &count);
 			printf("--FINAL DFS-- con %d\n",count);
 			imprimirEstado(final_state);
 			break;
 		case '2':
+			count = 0;
 			final_state = BFS(&estado_inicial, &count);
 			printf("--FINAL BFS-- con %d\n",count);
 			imprimirEstado(final_state);
