@@ -4,6 +4,7 @@
 #include "tdas/stack.h"
 #include "tdas/heap.h"
 #include "tdas/extra.h"
+#include "tdas/queue.h"
 #include <string.h>
 
 // Definición de la estructura para el estado del puzzle
@@ -24,8 +25,8 @@ State* createState(){
 }
 
 int is_final_state(State* s){
-	int final_state[3][3] = {{1,2,3},{4,5,6},{7,8,0}};
-	
+	//int final_state[3][3] = {{1,2,3},{4,5,6},{7,8,0}};
+	int final_state[3][3] = {{0,1,2},{3,4,5},{6,7,8}};
 	for(int i = 0; i < 3; i++){
 		for(int j = 0; j < 3; j++){
 			if (s->square[i][j] != final_state[i][j]) return 0;
@@ -95,11 +96,10 @@ State* transition(State* current_state, int action){
 
 List* get_adj_states(State* s){
 	List* adj = list_create();
-	State* aux = s;
 	
 	//while (!is_final_state(aux)){
 		for (int action = 1; action <= 4; action++){
-			State* new_state = transition(aux, action);
+			State* new_state = transition(s, action);
 			if (new_state != NULL){
 				list_pushFront(adj, new_state);
 			}
@@ -130,7 +130,7 @@ int distancia_L1(State* state) {
 State* DFS(State* initial_state, int* count){
 	//Crear limitantes
 	//
-	int max_high = 10;
+	int max_high = 12;
 	int current_high = 0;
 
 	//Crear stacks
@@ -138,47 +138,116 @@ State* DFS(State* initial_state, int* count){
 	stack_push(stack, initial_state);
 	
 	
-	while(stack_top(stack) != NULL){
+	while(list_size(stack) != 0){
 		State* current_state = (State*) stack_top(stack);
 		stack_pop(stack);
-		(*count)++;
+		
 		
 		if (is_final_state(current_state)){
 			free(stack);
 			return current_state;
 		}
-		
+		//printf("altura actual: %d\n", current_high);
+				current_high= list_size(current_state->actions);
+				if (current_high >= max_high) continue;
 		//if (current_state->is_visited == 1) continue;
 		//else current_state->is_visited = 1;
 		
-		//if (list_size(current_state->actions) < 10){
+		//if (list_size(current_state->actions) < 
 			List* adj = get_adj_states(current_state);
 			State* aux_state = list_first(adj);
 		
 			while(aux_state != NULL){
-				imprimirEstado(aux_state);
-				
 				if (is_final_state(aux_state)){
+					list_clean(adj);
 					free(stack);
 					return aux_state;
 				}
-				printf("altura actual: %d\n", current_high);
-				current_high= list_size(aux_state);
-				if (current_high >= max_high) continue;
-				
+										
 				stack_push(stack, aux_state);
 				
-				printf("----%d----\n", *count);
+				//printf("----%d----\n", *count);
 				aux_state = list_next(adj);
 			}
-			free(adj);
+		//
+		
+				//list_clean(aux_state->actions);
+			//free(aux_state);
+			//free(current_state);
+				//list_clean(current_state->actions);
+				//free(aux_state->actions);
+				free(aux_state);
+				//free(current_state);
+				list_clean(adj);
+				(*count)++;
 		//current_high++;
 		//} 
 		
 	}
+	printf("No se encontro solucion\n");
 	return NULL;
 }
 
+State* BFS(State* initial_state, int* count){
+	//Crear limitantes
+	//
+	int max_high = 12;
+	int current_high = 0;
+
+	//Crear stacks
+	Stack* queue = queue_create(queue);
+	queue_insert(queue, initial_state);
+
+
+	while(list_size(queue) != 0){
+		State* current_state = (State*) queue_front(queue);
+		queue_remove(queue);
+
+
+		if (is_final_state(current_state)){
+			free(queue);
+			return current_state;
+		}
+		//printf("altura actual: %d\n", current_high);
+				current_high= list_size(current_state->actions);
+				if (current_high >= max_high) continue;
+		//if (current_state->is_visited == 1) continue;
+		//else current_state->is_visited = 1;
+
+		//if (list_size(current_state->actions) < 
+			List* adj = get_adj_states(current_state);
+			State* aux_state = list_first(adj);
+
+			while(aux_state != NULL){
+				if (is_final_state(aux_state)){
+					list_clean(adj);
+					free(queue);
+					return aux_state;
+				}
+
+				queue_insert(queue, aux_state);
+
+				//printf("----%d----\n", *count);
+				aux_state = list_next(adj);
+			}
+		//
+
+				//list_clean(aux_state->actions);
+			//free(aux_state);
+			//free(current_state);
+				//list_clean(current_state->actions);
+				//free(aux_state->actions);
+				free(aux_state);
+				//free(current_state);
+				list_clean(adj);
+				(*count)++;
+		//current_high++;
+		//} 
+
+	}
+	printf("No se encontro solucion\n");
+	return NULL;
+}
 
 // Función para imprimir el estado del puzzle
 void imprimirEstado(const State *estado) {
@@ -197,21 +266,21 @@ void imprimirEstado(const State *estado) {
 
 int main() { 
 	// Estado inicial del puzzle
-	/*
+	
 	State estado_inicial = {
-		{{2, 0, 8}, // Primera fila (0 representa espacio vacío)
+		{{0, 2, 8}, // Primera fila (0 representa espacio vacío)
 		 {1, 3, 4}, // Segunda fila
 		 {6, 5, 7}, // Tercera fila
 		 },  
-		0, 1   // Posición del espacio vacío (fila 0, columna 1)
-	}; */
-	State estado_inicial = {
-		{{1, 2, 3}, // Primera fila (0 representa espacio vacío)
-		 {4, 5, 6}, // Segunda fila
-		 {0, 7, 8}, // Tercera fila
+		0, 0   // Posición del espacio vacío (fila 0, columna 1)
+	}; 
+	/*State estado_inicial = {
+		{{1, 2, 5}, // Primera fila (0 representa espacio vacío)
+		 {3, 4, 8}, // Segunda fila
+		 {6, 7, 0}, // Tercera fila
 		 },  
-		2, 0   // Posición del espacio vacío (fila 0, columna 1)
-	};
+		2, 2   // Posición del espacio vacío (fila 0, columna 1)
+	};*/
 	estado_inicial.actions = list_create();
 
 	// Imprime el estado inicial
@@ -272,22 +341,24 @@ int main() {
 	
 		switch (opcion) {
 		case '1':
-		  
+			
 			final_state = DFS(&estado_inicial, &count);
-			printf("--FINAL--\n");
+			printf("--FINAL DFS-- con %d\n",count);
 			imprimirEstado(final_state);
-		  break;
+			break;
 		case '2':
-		  //bfs(estado_inicial);
-		  break;
+			final_state = BFS(&estado_inicial, &count);
+			printf("--FINAL BFS-- con %d\n",count);
+			imprimirEstado(final_state);
+			break;
 		case '3':
-		  //best_first(estado_inicial);
-		  break;
+			//best_first(estado_inicial);
+			break;
 		}
 		presioneTeclaParaContinuar();
 		limpiarPantalla();
 
-  } while (opcion != '4');
+	} while (opcion != '4');
 
-  return 0;
+	return 0;
 }
