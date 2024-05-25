@@ -7,6 +7,7 @@
 #include "tdas/queue.h"
 #include <string.h>
 
+
 // Definición de la estructura para el estado del puzzle
 typedef struct {
 	int square[3][3]; // Matriz 3x3 que representa el tablero
@@ -38,6 +39,10 @@ int is_final_state(State* s){
 // Función para copiar un nuevo estado
 State* copy(State* s){
 	State* new_state = (State*) malloc(sizeof(State));
+	if (new_state == NULL){
+		printf("Error al asignar memoria para el nuevo estado\n");
+		exit(EXIT_FAILURE);
+	}
 	
 	memcpy(new_state->square, s->square, sizeof(int) * 9);
 	
@@ -136,53 +141,35 @@ State* DFS(State* initial_state, int* count){
 	//Crear stacks
 	Stack* stack = stack_create(stack);
 	stack_push(stack, initial_state);
-	
-	
+
+	//Recorrer el stack
 	while(list_size(stack) != 0){
 		State* current_state = (State*) stack_top(stack);
 		stack_pop(stack);
+
+		current_high= list_size(current_state->actions);
+		if (current_high >= max_high) continue;
+
+		List* adj = get_adj_states(current_state);
+		State* aux_state = list_first(adj);
 		
-		
-		/*if (is_final_state(current_state)){
-			free(stack);
-			return current_state;
-		}*/
-		//printf("altura actual: %d\n", current_high);
-				current_high= list_size(current_state->actions);
-				if (current_high >= max_high) continue;
-		//if (current_state->is_visited == 1) continue;
-		//else current_state->is_visited = 1;
-		
-		//if (list_size(current_state->actions) < 
-			List* adj = get_adj_states(current_state);
-			State* aux_state = list_first(adj);
-		
-			while(aux_state != NULL){
-				if (is_final_state(aux_state)){
-					list_clean(adj);
-					stack_clean(stack);
-					return aux_state;
-				}
-										
-				stack_push(stack, aux_state);
-				
-				//printf("----%d----\n", *count);
-				aux_state = list_next(adj);
-			}
-		//
-		
-				//list_clean(aux_state->actions);
-			//free(aux_state);
-			//free(current_state);
-				//list_clean(current_state->actions);
-				//free(aux_state->actions);
-				free(aux_state);
-				//free(current_state);
+		while(aux_state != NULL){
+			if (is_final_state(aux_state)){
 				list_clean(adj);
-				(*count)++;
-		//current_high++;
-		//} 
-		
+				stack_clean(stack);
+				return aux_state;
+			}
+
+			stack_push(stack, aux_state);
+			imprimirEstado(aux_state);
+			
+			aux_state = list_next(adj);
+		}
+
+		free(aux_state);
+
+		list_clean(adj);
+		(*count)++;
 	}
 	printf("No se encontro solucion\n");
 	return NULL;
@@ -195,56 +182,118 @@ State* BFS(State* initial_state, int* count){
 	int current_high = 0;
 
 	//Crear stacks
-	Stack* queue = queue_create(queue);
+	Queue* queue = queue_create(queue);
 	queue_insert(queue, initial_state);
 
-
+	//Recorrer cola
 	while(list_size(queue) != 0){
 		State* current_state = (State*) queue_front(queue);
 		queue_remove(queue);
 
-		/*
-		if (is_final_state(current_state)){
-			list_clean(adj);
-			free(queue);
-			return current_state;
-		}*/
-		//printf("altura actual: %d\n", current_high);
-				current_high= list_size(current_state->actions);
-				if (current_high >= max_high) continue;
-		//if (current_state->is_visited == 1) continue;
-		//else current_state->is_visited = 1;
 
-		//if (list_size(current_state->actions) < 
-			List* adj = get_adj_states(current_state);
-			State* aux_state = list_first(adj);
+		current_high= list_size(current_state->actions);
+		if (current_high >= max_high) continue;
+		
+		List* adj = get_adj_states(current_state);
+		State* aux_state = list_first(adj);
 
-			while(aux_state != NULL){
-				if (is_final_state(aux_state)){
-					list_clean(adj);
-					queue_clean(queue);
-					return aux_state;
-				}
-
-				queue_insert(queue, aux_state);
-
-				//printf("----%d----\n", *count);
-				aux_state = list_next(adj);
-			}
-		//
-
-				//list_clean(aux_state->actions);
-			//free(aux_state);
-			//free(current_state);
-				//list_clean(current_state->actions);
-				//free(aux_state->actions);
-				free(aux_state);
-				//free(current_state);
+		while(aux_state != NULL){
+			if (is_final_state(aux_state)){
 				list_clean(adj);
-				(*count)++;
-		//current_high++;
-		//} 
+				queue_clean(queue);
+				return aux_state;
+			}
+	
+			queue_insert(queue, aux_state);
+			imprimirEstado(aux_state);
 
+			aux_state = list_next(adj);
+		}
+
+		free(aux_state);
+		list_clean(adj);
+		(*count)++;
+	}
+	printf("No se encontro solucion\n");
+	return NULL;
+}
+
+/*	
+	//Ejemplo de heap (cola con prioridad)
+	printf("\n***** EJEMPLO USO DE HEAP ******\nCreamos un Heap e insertamos 3 elementos con distinta prioridad\n");
+	Heap* heap = heap_create();
+	char* data = strdup("Cinco");
+	printf("Insertamos el elemento %s con prioridad -5\n", data);
+	heap_push(heap, data, -5 /*prioridad);
+	data = strdup("Seis");
+	printf("Insertamos el elemento %s con prioridad -6\n", data);
+	heap_push(heap, data, -6 /*prioridad*);
+	data = strdup("Siete");
+	printf("Insertamos el elemento %s con prioridad -7\n", data);
+	heap_push(heap, data, -7 /*prioridad*);
+
+	printf("\nLos elementos salen del Heap ordenados de mayor a menor prioridad\n");
+	while (heap_top(heap) != NULL){
+		printf("Top: %s\n", (char*) heap_top(heap));      
+		heap_pop(heap);
+	}
+	printf("No hay más elementos en el Heap\n");
+*/
+/*
+int distance(State* initial_state){
+	int contador_distancia = 0;
+	int x,y;
+	int final_state[3][3] = {{0,1,2},{3,4,5},{6,7,8}};
+	
+	for(int i = 0; i < 3; i++){
+		for(int j = 0; j < 3; j++){
+			if (initial_state->square[i][j] != 0){
+				x = (initial_state->square[i][j]-1)/3;
+				y = (initial_state->square[i][j]-1)%3;
+				int dist = sqrt(pow(x-i, 2) + pow(y-j, 2));
+				contador_distancia += dist;
+				printf("Para el elemento %d la distancia es %d\n", initial_state->square[i][j], contador_distancia);
+			}
+		}
+	}
+	return contador_distancia;
+}*/
+State* BEST_FIRST(State* initial_state, int* count){
+	int max_high = 12;
+	int current_high = 0;
+	//Crear stacks
+	Heap* heap = heap_create();
+	int dist = distancia_L1(initial_state);
+	heap_push(heap, initial_state, dist);
+	
+	State* current_state = NULL;
+	while(heap_top(heap)){
+		current_state = (State*) heap_top(heap);
+		heap_pop(heap);
+		
+		//imprimirEstado(current_state);
+		current_high = list_size(current_state->actions);
+		if (current_high >= max_high) continue;
+		
+		List* adj = get_adj_states(current_state);
+		State* aux_state = list_first(adj);
+
+		while(aux_state != NULL){
+			if (is_final_state(aux_state)){
+				list_clean(adj);
+				free(heap);
+				return aux_state;
+			}
+
+			dist = distancia_L1(aux_state);
+			heap_push(heap, aux_state, dist);
+			//imprimirEstado(aux_state);
+			aux_state = list_next(adj);
+		}
+		
+		free(aux_state);
+		list_clean(adj);
+		(*count)++;
 	}
 	printf("No se encontro solucion\n");
 	return NULL;
@@ -267,7 +316,7 @@ void imprimirEstado(const State *estado) {
 
 int main() { 
 	// Estado inicial del puzzle
-	
+	//028134657
 	State estado_inicial = {
 		{{0, 2, 8}, // Primera fila (0 representa espacio vacío)
 		 {1, 3, 4}, // Segunda fila
@@ -302,26 +351,6 @@ int main() {
 		printf("----\n");
 	}
 
-	
-	//Ejemplo de heap (cola con prioridad)
-	printf("\n***** EJEMPLO USO DE HEAP ******\nCreamos un Heap e insertamos 3 elementos con distinta prioridad\n");
-	Heap* heap = heap_create();
-	char* data = strdup("Cinco");
-	printf("Insertamos el elemento %s con prioridad -5\n", data);
-	heap_push(heap, data, -5 /*prioridad*/);
-	data = strdup("Seis");
-	printf("Insertamos el elemento %s con prioridad -6\n", data);
-	heap_push(heap, data, -6 /*prioridad*/);
-	data = strdup("Siete");
-	printf("Insertamos el elemento %s con prioridad -7\n", data);
-	heap_push(heap, data, -7 /*prioridad*/);
-
-	printf("\nLos elementos salen del Heap ordenados de mayor a menor prioridad\n");
-	while (heap_top(heap) != NULL){
-		printf("Top: %s\n", (char*) heap_top(heap));      
-		heap_pop(heap);
-	}
-	printf("No hay más elementos en el Heap\n");
 
 	int count;
 	State* final_state = (State*) malloc(sizeof(State));
@@ -354,7 +383,10 @@ int main() {
 			imprimirEstado(final_state);
 			break;
 		case '3':
-			//best_first(estado_inicial);
+			count = 0;
+			final_state = BEST_FIRST(&estado_inicial, &count);
+			printf("--FINAL BEST_FIRST-- con %d\n",count);
+			imprimirEstado(final_state);
 			break;
 		}
 		presioneTeclaParaContinuar();
