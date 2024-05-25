@@ -17,16 +17,22 @@ typedef struct {
 	//int is_visited; //Si es 1 ya se visito, si no ha sido visitado es un 0
 } State;
 
-
-// Función para crear un nuevo estado
-State* createState(){
-	State* s = (State*)malloc(sizeof(State));
-	s->actions = list_create();
-	return s;
+// Función para imprimir el estado del puzzle
+void imprimirEstado(const State *estado) {
+	for (int i = 0; i < 3; i++) {
+		for (int j = 0; j < 3; j++) {
+			if (estado->square[i][j] == 0)
+				printf("x "); // Imprime un espacio en blanco para el espacio vacío
+			else
+				printf("%d ", estado->square[i][j]);
+		}
+		printf("\n");
+	}
 }
 
+// Función para evaluar si un estado dado es el final
 int is_final_state(State* s){
-	//int final_state[3][3] = {{1,2,3},{4,5,6},{7,8,0}};
+	
 	int final_state[3][3] = {{0,1,2},{3,4,5},{6,7,8}};
 	for(int i = 0; i < 3; i++){
 		for(int j = 0; j < 3; j++){
@@ -53,13 +59,14 @@ State* copy(State* s){
 	int action = list_first(s->actions);
 	
 	while(action != NULL){
-		list_pushFront(new_state->actions, action);
+		list_pushBack(new_state->actions, action);
 		action = list_next(s->actions);
 	}
 	return new_state;
 	
 }
 
+//Funcion para transicionar de un estado a otro
 State* transition(State* current_state, int action){
 	int new_x = current_state->x;
 	int new_y = current_state->y;
@@ -93,30 +100,28 @@ State* transition(State* current_state, int action){
 		new_state->x = new_x;
 		new_state->y = new_y;
 		//Agregar action a la list de actions
-		list_pushFront(new_state->actions, action);
+		list_pushBack(new_state->actions, action);
 		return new_state;
 	}
 	return NULL;
 }
 
+//Funcion para obtener el listado de estados adyacentes
 List* get_adj_states(State* s){
 	List* adj = list_create();
 	
-	//while (!is_final_state(aux)){
-		for (int action = 1; action <= 4; action++){
-			State* new_state = transition(s, action);
-			if (new_state != NULL){
-				list_pushFront(adj, new_state);
-			}
+
+	for (int action = 1; action <= 4; action++){
+		State* new_state = transition(s, action);
+		if (new_state != NULL){
+			list_pushBack(adj, new_state);
 		}
-		//aux = new_state;
-	//}
-	//printf("xd");	
+	}
+
 	return adj;
 }
 
-
-
+//FUncion para calcular la Distancia de Manhattan
 int distancia_L1(State* state) {
 	int ev=0;
 	int k=1;
@@ -131,10 +136,9 @@ int distancia_L1(State* state) {
 	return ev;
 }
 
-/*Para evitar que la búsqueda en profundidad se quede iterando hasta el infinito, pueden limitar la altura del árbol de búsqueda. Por ejemplo. si el tamaño de la lista de acciones es mayor a 10, continuar con el siguiente estado (y no agregar estados adyacentes).*/
+//Funcion para realizar la Busqueda en Profundidad
 State* DFS(State* initial_state, int* count){
 	//Crear limitantes
-	//
 	int max_high = 12;
 	int current_high = 0;
 
@@ -142,11 +146,13 @@ State* DFS(State* initial_state, int* count){
 	Stack* stack = stack_create(stack);
 	stack_push(stack, initial_state);
 
-	//Recorrer el stack
+	printf("\n--Estado N°%d--\n", *count);
+	imprimirEstado(initial_state);
+	
 	while(list_size(stack) != 0){
 		State* current_state = (State*) stack_top(stack);
 		stack_pop(stack);
-
+		
 		current_high= list_size(current_state->actions);
 		if (current_high >= max_high) continue;
 
@@ -157,27 +163,30 @@ State* DFS(State* initial_state, int* count){
 			if (is_final_state(aux_state)){
 				list_clean(adj);
 				stack_clean(stack);
+				(*count)++;
 				return aux_state;
 			}
 
 			stack_push(stack, aux_state);
+			
+			(*count)++;
+			printf("\n--Estado N°%d--\n", *count);
 			imprimirEstado(aux_state);
 			
 			aux_state = list_next(adj);
 		}
-
+		
 		free(aux_state);
-
 		list_clean(adj);
-		(*count)++;
+		
 	}
 	printf("No se encontro solucion\n");
 	return NULL;
 }
 
+//Funcion para realizar la Busqueda en Amplitud
 State* BFS(State* initial_state, int* count){
 	//Crear limitantes
-	//
 	int max_high = 12;
 	int current_high = 0;
 
@@ -201,63 +210,26 @@ State* BFS(State* initial_state, int* count){
 			if (is_final_state(aux_state)){
 				list_clean(adj);
 				queue_clean(queue);
+				(*count)++;
 				return aux_state;
 			}
 	
 			queue_insert(queue, aux_state);
+			(*count)++;
+			printf("--Estado N°%d--\n", *count);
 			imprimirEstado(aux_state);
-
+			
 			aux_state = list_next(adj);
 		}
 
 		free(aux_state);
 		list_clean(adj);
-		(*count)++;
 	}
 	printf("No se encontro solucion\n");
 	return NULL;
 }
 
-/*	
-	//Ejemplo de heap (cola con prioridad)
-	printf("\n***** EJEMPLO USO DE HEAP ******\nCreamos un Heap e insertamos 3 elementos con distinta prioridad\n");
-	Heap* heap = heap_create();
-	char* data = strdup("Cinco");
-	printf("Insertamos el elemento %s con prioridad -5\n", data);
-	heap_push(heap, data, -5 /*prioridad);
-	data = strdup("Seis");
-	printf("Insertamos el elemento %s con prioridad -6\n", data);
-	heap_push(heap, data, -6 /*prioridad*);
-	data = strdup("Siete");
-	printf("Insertamos el elemento %s con prioridad -7\n", data);
-	heap_push(heap, data, -7 /*prioridad*);
-
-	printf("\nLos elementos salen del Heap ordenados de mayor a menor prioridad\n");
-	while (heap_top(heap) != NULL){
-		printf("Top: %s\n", (char*) heap_top(heap));      
-		heap_pop(heap);
-	}
-	printf("No hay más elementos en el Heap\n");
-*/
-/*
-int distance(State* initial_state){
-	int contador_distancia = 0;
-	int x,y;
-	int final_state[3][3] = {{0,1,2},{3,4,5},{6,7,8}};
-	
-	for(int i = 0; i < 3; i++){
-		for(int j = 0; j < 3; j++){
-			if (initial_state->square[i][j] != 0){
-				x = (initial_state->square[i][j]-1)/3;
-				y = (initial_state->square[i][j]-1)%3;
-				int dist = sqrt(pow(x-i, 2) + pow(y-j, 2));
-				contador_distancia += dist;
-				printf("Para el elemento %d la distancia es %d\n", initial_state->square[i][j], contador_distancia);
-			}
-		}
-	}
-	return contador_distancia;
-}*/
+//Funcion para realizar la Busqueda del Mejor Candidato
 State* BEST_FIRST(State* initial_state, int* count){
 	int max_high = 12;
 	int current_high = 0;
@@ -282,37 +254,29 @@ State* BEST_FIRST(State* initial_state, int* count){
 			if (is_final_state(aux_state)){
 				list_clean(adj);
 				free(heap);
+				(*count)++;
 				return aux_state;
 			}
 
 			dist = distancia_L1(aux_state);
 			heap_push(heap, aux_state, dist);
-			//imprimirEstado(aux_state);
+
+			(*count)++;
+			printf("--Estado N°%d--\n", *count);
+			imprimirEstado(aux_state);
+			
+			
 			aux_state = list_next(adj);
 		}
 		
 		free(aux_state);
 		list_clean(adj);
-		(*count)++;
+		
 	}
+	
 	printf("No se encontro solucion\n");
-	return NULL;
+	return current_state;
 }
-
-// Función para imprimir el estado del puzzle
-void imprimirEstado(const State *estado) {
-	for (int i = 0; i < 3; i++) {
-		for (int j = 0; j < 3; j++) {
-			if (estado->square[i][j] == 0)
-				printf("x "); // Imprime un espacio en blanco para el espacio vacío
-			else
-				printf("%d ", estado->square[i][j]);
-		}
-		printf("\n");
-	}
-	printf("----\n");
-}
-
 
 int main() { 
 	// Estado inicial del puzzle
@@ -322,41 +286,35 @@ int main() {
 		 {1, 3, 4}, // Segunda fila
 		 {6, 5, 7}, // Tercera fila
 		 },  
-		0, 0   // Posición del espacio vacío (fila 0, columna 1)
+		0, 0   // Posición del espacio vacío (fila 0, columna 0)
 	}; 
-	/*State estado_inicial = {
-		{{1, 2, 5}, // Primera fila (0 representa espacio vacío)
-		 {3, 4, 8}, // Segunda fila
-		 {6, 7, 0}, // Tercera fila
-		 },  
-		2, 2   // Posición del espacio vacío (fila 0, columna 1)
-	};*/
+
 	estado_inicial.actions = list_create();
-
-	// Imprime el estado inicial
-	printf("Estado inicial del puzzle:\n");
-	imprimirEstado(&estado_inicial);
-
-	printf("Distancia L1:%d\n", distancia_L1(&estado_inicial));
-
-
-	//Generar estados adyacentes
-	List* adj = get_adj_states(&estado_inicial);
-	printf("Estados adyacentes:\n");
 	
-	State* state = (State*)list_first(adj);
-	while (state != NULL){
-		imprimirEstado(state);
-		state = (State*)list_next(adj);
-		printf("----\n");
+	// Abrir archivo de log
+	FILE* log_file = fopen("log.txt", "w");
+	if (log_file == NULL) {
+			printf("Error al abrir el archivo de log\n");
+			return 1;
 	}
 
-
+	// Redirigir stdout al archivo de log
+	int stdout_copy = dup(fileno(stdout));
+	if (dup2(fileno(log_file), fileno(stdout)) == -1) {
+			printf("Error al redirigir stdout\n");
+			fclose(log_file);
+			return 1;
+	}
+	
+	// Imprime el estado inicial
+	puts("========================================");
+	puts("     Estado inicial del puzzle:\n");
+	imprimirEstado(&estado_inicial);
+	puts("========================================");
 	int count;
 	State* final_state = (State*) malloc(sizeof(State));
 	int opcion;
 	do {
-		printf("\n***** EJEMPLO MENU ******\n");
 		puts("========================================");
 		puts("     Escoge método de búsqueda");
 		puts("========================================");
@@ -373,20 +331,23 @@ int main() {
 		case '1':
 			count = 0;
 			final_state = DFS(&estado_inicial, &count);
-			printf("--FINAL DFS-- con %d\n",count);
+			printf("--FINAL DFS-- con %d iteraciones\n",count);
 			imprimirEstado(final_state);
+			return 0;
 			break;
 		case '2':
 			count = 0;
 			final_state = BFS(&estado_inicial, &count);
-			printf("--FINAL BFS-- con %d\n",count);
+			printf("--FINAL BFS-- con %d iteraciones\n",count);
 			imprimirEstado(final_state);
+			return 0;
 			break;
 		case '3':
 			count = 0;
 			final_state = BEST_FIRST(&estado_inicial, &count);
-			printf("--FINAL BEST_FIRST-- con %d\n",count);
+			printf("--FINAL BEST_FIRST-- con %d iteraciones\n",count);
 			imprimirEstado(final_state);
+			return 0;
 			break;
 		}
 		presioneTeclaParaContinuar();
