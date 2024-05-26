@@ -154,7 +154,7 @@ x 3 4
 6 5 7 
 ....
 
---FINAL BEST_FIRST-- con 299590 iteraciones
+--FINAL BEST_FIRST-- con 299006 iteraciones
 x 1 2 
 3 4 5 
 6 7 8 

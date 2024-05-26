@@ -71,7 +71,7 @@ State* copy(State* s){
 	State* new_state = (State*) malloc(sizeof(State));
 	if (new_state == NULL){
 		printf("Error al asignar memoria para el nuevo estado\n");
-		exit(EXIT_FAILURE);
+		return NULL;
 	}
 	//Copiar la matriz 'square' del estado dado 's' al nuevo estado 'new_state'
 	memcpy(new_state->square, s->square, sizeof(int) * 9);
@@ -82,11 +82,19 @@ State* copy(State* s){
 	new_state->actions = list_create();
 
 	//Crear y copiar la lista de acciones del estado dado al nuevo estado
-	int action = list_first(s->actions);
+	int* action = (int*) list_first(s->actions);
 	
 	while(action != NULL){
-		list_pushBack(new_state->actions, action);
+		//Creo una copia de la accion en la memoria dinamicamente
+		int* action_copy = (int*) malloc(sizeof(int));
+		if (action_copy == NULL) return NULL;
+		else *action_copy = *action;
+
+		//Agregar copia de la action a la list de actions del nuevo estado
+		list_pushBack(new_state->actions, action_copy);
+		
 		action = list_next(s->actions);
+		
 	}
 	//Retornar el estado copiado
 	return new_state;
@@ -123,19 +131,26 @@ State* transition(State* current_state, int action){
 			return NULL; // Si la accion no es valida return NULL
 	}
 
-	//Comprobar si es valido el mov.
+	//Si el movimiento o action es valido, crear un nuevo estado
 	if (new_x >= 0 && new_x < 3 && new_y >= 0 && new_y < 3){
 		//Crear estado
-		State* new_state = copy(current_state);
-
+		State* new_state = NULL;
+		new_state = copy(current_state);
+		
 		//Cambiar espacio vacio con el cuadro adyacente
 		new_state->square[current_state->x][current_state->y] = new_state->square[new_x][new_y];
 		new_state->square[new_x][new_y] = 0;
 		new_state->x = new_x;
 		new_state->y = new_y;
 		
-		//Agregar action a la list de actions
-		list_pushBack(new_state->actions, action);
+		//Crear una copia de la accion en la memoria dinamicamente
+		int* action_copy = (int*) malloc(sizeof(int));
+		if (action_copy == NULL) return NULL;
+		else *action_copy = action;
+		
+		//Agregar copia de la action a la list de actions del nuevo estado
+		list_pushBack(new_state->actions, action_copy);
+
 		return new_state;
 	}
 	return NULL;
@@ -154,7 +169,8 @@ List* get_adj_states(State* s){
 	List* adj = list_create();//Crear lista de estados adyacentes
 	
 	for (int action = 1; action <= 4; action++){
-		State* new_state = transition(s, action); //Obtener un estado adyacente
+		State* new_state = NULL;
+		new_state = transition(s, action); //Obtener un estado adyacente
 		if (new_state != NULL){
 			//Si el estado calculado es válido, se agrega a la lista de estados adyacentes
 			list_pushBack(adj, new_state);
@@ -215,6 +231,13 @@ State* DFS(State* initial_state, int* count){
 		State* current_state = (State*) stack_top(stack);
 		stack_pop(stack);
 
+		//Verificacion de estado final
+		if (is_final_state(current_state)){
+			stack_clean(stack);
+			(*count)++;
+			return current_state;
+		}
+		
 		//Verificar altura
 		current_high= list_size(current_state->actions);
 		if (current_high >= max_high) continue;
@@ -222,11 +245,14 @@ State* DFS(State* initial_state, int* count){
 		//Obtener estados adyacentes del estado actual (current_state)
 		List* adj = get_adj_states(current_state);
 		State* aux_state = list_first(adj);
-
+		
+		
 		//Recorremos la lista de estados adyacentes
 		while(aux_state != NULL){
 			//Verificacion de estado final
 			if (is_final_state(aux_state)){
+				list_clean(current_state->actions);
+				free(current_state);
 				list_clean(adj);
 				stack_clean(stack);
 				(*count)++;
@@ -243,12 +269,13 @@ State* DFS(State* initial_state, int* count){
 			
 			aux_state = list_next(adj); //Pasar al siguiente estado adyacente 
 		}
-		
+				
 		free(aux_state);
 		list_clean(adj);
 		
 	}
 	printf("No se encontro solucion\n");
+	stack_clean(stack);
 	return NULL;
 }
 
@@ -276,6 +303,13 @@ State* BFS(State* initial_state, int* count){
 		State* current_state = (State*) queue_front(queue);
 		queue_remove(queue);
 
+		//Verificacion de estado final
+		if (is_final_state(current_state)){
+			queue_clean(queue);
+			(*count)++;
+			return current_state;
+		}
+		
 		//Verificar altura
 		current_high= list_size(current_state->actions);
 		if (current_high >= max_high) continue;
@@ -309,6 +343,7 @@ State* BFS(State* initial_state, int* count){
 		list_clean(adj);
 	}
 	printf("No se encontro solucion\n");
+	queue_clean(queue);
 	return NULL;
 }
 
@@ -325,7 +360,7 @@ State* BFS(State* initial_state, int* count){
  * @param *initial_state Puntero al estado inicial desde el cual iniciar la búsqueda.
  * @return *count Puntero al contador de iteraciones que se tomaron al realizar la búsqueda.
  */
-// 
+// -FUNCIÓN OPCIONAL POR TRABAJO INDIVIDUAL-
 State* BEST_FIRST(State* initial_state, int* count){
 	//Crear limitantes de altura
 	int max_high = 12;
@@ -336,7 +371,9 @@ State* BEST_FIRST(State* initial_state, int* count){
 	
 	//Calcular distancia e insertar con prioridad en el Heap
 	int dist = distancia_L1(initial_state);
-	heap_push(heap, initial_state, dist);
+	int cant_actions = list_size(initial_state->actions);
+	int priority = dist + cant_actions;
+	heap_push(heap, initial_state, priority);
 
 	//Recorremos los estados almacenados en el Heap
 	State* current_state = NULL;
@@ -344,6 +381,10 @@ State* BEST_FIRST(State* initial_state, int* count){
 		current_state = (State*) heap_top(heap);
 		heap_pop(heap);
 		
+		if (is_final_state(current_state)){
+			(*count)++;
+			return current_state;
+		}
 		//Verificar altura
 		current_high = list_size(current_state->actions);
 		if (current_high >= max_high) continue;
@@ -364,7 +405,9 @@ State* BEST_FIRST(State* initial_state, int* count){
 
 			//Si no es estado final, agregar al heap con prioridad
 			dist = distancia_L1(aux_state); //Calcular mejor distancia
-			heap_push(heap, aux_state, dist);
+			cant_actions = list_size(aux_state->actions);
+			priority = dist + cant_actions;
+			heap_push(heap, aux_state, priority);
 
 			//Aumentar contador e imprimir estado
 			(*count)++;
@@ -379,7 +422,7 @@ State* BEST_FIRST(State* initial_state, int* count){
 	}
 	
 	printf("No se encontro solucion\n");
-	return current_state;
+	return NULL;
 }
 
 
@@ -409,7 +452,7 @@ int main() {
 	
 	// Declarar variables a utilizar
 	int count; //Contador de iteraciones
-	State* final_state = (State*) malloc(sizeof(State)); //Puntero al estado final
+	State* final_state = NULL; //Puntero al estado final
 	char opcion; //Option del menu
 	do {
 		puts("========================================");
@@ -429,22 +472,24 @@ int main() {
 			//Busqeuda en Profundidad
 			count = 0;
 			final_state = DFS(&estado_inicial, &count);
+			
 			printf("--FINAL DFS-- con %d iteraciones\n",count);
-			imprimirEstado(final_state);
+			if (final_state != NULL) imprimirEstado(final_state);
+			
 			break;
 		case '2':
 			//Busqueda en Amplitud
 			count = 0;
 			final_state = BFS(&estado_inicial, &count);
 			printf("--FINAL BFS-- con %d iteraciones\n",count);
-			imprimirEstado(final_state);
+			if (final_state != NULL) imprimirEstado(final_state);
 			break;
 		case '3':
 			//Busqeuda del Mejor Primero
 			count = 0;
 			final_state = BEST_FIRST(&estado_inicial, &count);
 			printf("--FINAL BEST_FIRST-- con %d iteraciones\n",count);
-			imprimirEstado(final_state);
+			if (final_state != NULL) imprimirEstado(final_state);
 			break;
 		}
 		presioneTeclaParaContinuar();
