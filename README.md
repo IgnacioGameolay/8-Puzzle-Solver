@@ -31,13 +31,14 @@ Para ello seguir los siguientes pasos:
 
 ### Problemas conocidos:
 
-- Se visitan nodos o estados que ya han sido visitados anteriormente, lo que aumenta el número de iteraciones. Esto ocurre por el almacenamiento de los nodos adyacentes en el stack, queue y heap.
+- Se visitan nodos o estados que ya han sido visitados anteriormente, lo que aumenta el número de iteraciones. Esto pordría ocurrir debudi a la naturaleza del almacenamiento de los nodos adyacentes en la estructura.
 - Si se modifica la posición inicial o final desde el código, el programa debería de ser capaz de solucionarlo, pero es probable que si el estado ingresado está muy alejado de la respuesta, el programa podría no encontrar la solución por limitaciones de memoria y altura.
 - Al estar las búsquedas limitadas por altura, es probable que para ciertos estados iniciales no alcance a hallar soluciones.
 
 ### A mejorar:
 
-- Permitir la inserción manual de estados iniciales personalizados.
+- Permitir la inserción manual de estados iniciales y altura máxima personalizados.
+- Incorporar la funcionalidad de marcar los nodos o estados que ya han sido visitados, ahorrando así iteraciones y permitiendo búsquedas más eficaces.
 - Implementar y desarrollar una interfaz que facilite al usuario trabajar con el sistema mucho más cómodamente que por consola.
 
 ## Ejemplo de uso
