@@ -24,9 +24,9 @@ Para ello seguir los siguientes pasos:
 
 ### Funcionando correctamente:
 
-- Resolver el rompecabezas utilizando Búsqueda en Profundidad (DFS)
-- Resolver el rompecabezas utilizando Búsqueda en Profundidad (BFS)
-- Resolver el rompecabezas utilizando Búsqueda de Mejor Primero (Best-First Search)
+- Resolver el puzzle utilizando Búsqueda en Profundidad (DFS)
+- Resolver el puzzle utilizando Búsqueda en Profundidad (BFS)
+- Resolver el puzzle utilizando Búsqueda de Mejor Primero (Best-First Search)
 - Salir del sistema.
 
 ### Problemas conocidos:
